@@ -1,19 +1,12 @@
-(ns aoc-clj.2015.04.solution)
-
-(import 'java.security.MessageDigest
-        'java.math.BigInteger)
+(ns aoc-clj.2015.04.solution
+  (:require [aoc-clj.utils :as utils]))
 
 (def input "ckczppom")
-
-(defn md5 [^String s]
-  (let [algorithm (MessageDigest/getInstance "MD5")
-        raw (.digest algorithm (.getBytes s))]
-    (format "%032x" (BigInteger. 1 raw))))
 
 (defn find-suffix
   ([input regex] (find-suffix input regex 1))
   ([input regex n]
-   (let [hash (md5 (str input n))]
+   (let [hash (utils/md5 (str input n))]
      (if (re-seq regex hash) n
          (recur input regex (inc n))))))
 
