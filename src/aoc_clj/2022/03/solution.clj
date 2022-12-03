@@ -5,24 +5,23 @@
 (def input (string/split-lines (slurp "src/aoc_clj/2022/03/input.txt")))
 (def test-input (string/split-lines (slurp "src/aoc_clj/2022/03/test-input.txt")))
 
-(defn share-item-types [content]
+(defn shared-item-types [content]
   (let [[comp-1 comp-2] (partition (/ (count content) 2) content)]
-    (first (set/intersection (into #{} comp-1) (into #{} comp-2)))))
+    (first (set/intersection (set comp-1) (set comp-2)))))
 
 (def letter-values
-  (merge (zipmap (map char (range 97 123)) (range 1 27))
-         (zipmap (map char (range 65 91)) (range 27 53))))
+  (zipmap (map char (concat (range (int \a) (inc (int \z))) (range (int \A) (inc (int \Z)))))
+          (range 1 53)))
 
 (defn part-1 [input]
-  (->> (map (comp letter-values share-item-types) input)
+  (->> (map (comp letter-values shared-item-types) input)
        (reduce +)))
 
-(defn group->sets [group] (map #(apply hash-set %) group))
-(defn common-item [sets] (first (apply set/intersection sets)))
-
 (defn part-2 [input]
-  (->> (partition 3 input)
-       (map (comp letter-values common-item group->sets))
+  (->> (map set input)
+       (partition 3)
+       (mapcat #(apply set/intersection %))
+       (map letter-values)
        (reduce +)))
 
 (comment
