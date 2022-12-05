@@ -4,15 +4,11 @@
 (def input (slurp "src/aoc_clj/2022/01/input.txt"))
 (def test-input (slurp "src/aoc_clj/2022/01/test-input.txt"))
 
-(defn mapf [f' f coll] (map (fn [el] (f' f el)) coll))
-(def mapmap (partial mapf map))
-(def mapreduce (partial mapf reduce))
-
 (defn calories-by-elf [input]
   (->> (string/split input #"\n\n")
        (map #(string/split % #"\n"))
-       (mapmap #(Integer/parseInt %))
-       (mapreduce +)))
+       (map (partial map #(Integer/parseInt %)))
+       (map (partial reduce +))))
 
 (defn part-1 [input] (apply max (calories-by-elf input)))
 
