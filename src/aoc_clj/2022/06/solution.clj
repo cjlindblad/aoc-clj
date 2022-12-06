@@ -3,12 +3,11 @@
 
 (def input (string/trim (slurp "src/aoc_clj/2022/06/input.txt")))
 
-(defn solver
-  ([marker-length s] (solver marker-length s 0))
-  ([marker-length s char-count]
-   (let [candidate (take marker-length s)]
-     (if (apply distinct? candidate) (+ char-count marker-length)
-         (recur marker-length (rest s) (inc char-count))))))
+(defn solver [length input]
+  (->> (partition length 1 input)
+       (map (comp count set))
+       (take-while (complement #{length}))
+       (#(+ length (count %)))))
 
 (def part-1 (partial solver 4))
 (def part-2 (partial solver 14))
