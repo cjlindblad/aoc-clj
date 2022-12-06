@@ -2,6 +2,7 @@
   (:require [clojure.string :as string]))
 
 (def input (string/trim (slurp "src/aoc_clj/2022/06/input.txt")))
+
 (defn solver
   ([marker-length s] (solver marker-length s 0))
   ([marker-length s chars]
