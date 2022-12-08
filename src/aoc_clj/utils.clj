@@ -16,3 +16,11 @@
         raw (.digest algorithm (.getBytes s))]
     (format "%032x" (BigInteger. 1 raw))))
 
+(defn take-upto
+  [pred coll]
+  (lazy-seq
+   (when-let [s (seq coll)]
+     (if (pred (first s))
+       (cons (first s) nil)
+       (cons (first s) (take-upto pred (rest s)))))))
+
