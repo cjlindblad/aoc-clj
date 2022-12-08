@@ -8,7 +8,7 @@
 (defn parse-map [input]
   (map (partial map #(Integer/parseInt (str %))) input))
 
-(defn visible? [trees n]
+(defn find-good-spots [trees n]
   (let [width (count (first trees))
         horizontal-line (nth trees (quot n width))
         horizontal-index (mod n width)
@@ -19,41 +19,23 @@
         west-line (take horizontal-index horizontal-line)
         east-line (drop (inc horizontal-index) horizontal-line)
         north-line (take vertical-index vertical-line)
-        south-line (drop (inc vertical-index) vertical-line)]
-    (or (every? #(< % tree) west-line)
-        (every? #(< % tree) east-line)
-        (every? #(< % tree) north-line)
-        (every? #(< % tree) south-line))))
+        south-line (drop (inc vertical-index) vertical-line)
+        visible-lines [west-line east-line north-line south-line]
+        scenic-lines [east-line south-line (reverse north-line) (reverse west-line)]]
+    {:visible (->> (map (partial every? #(< % tree)) visible-lines)
+                   (some identity))
+     :scenic-score (->> (map (comp count (partial utils/take-upto #(>= % tree))) scenic-lines)
+                        (reduce *))}))
 
-(defn scenic-score [trees n]
-  (let [width (count (first trees))
-        horizontal-line (nth trees (quot n width))
-        horizontal-index (mod n width)
-        tree (nth horizontal-line horizontal-index)
-        rotated (apply map vector trees)
-        vertical-line (nth rotated (mod n width))
-        vertical-index (quot n width)
-        west-line (take horizontal-index horizontal-line)
-        east-line (drop (inc horizontal-index) horizontal-line)
-        north-line (take vertical-index vertical-line)
-        south-line (drop (inc vertical-index) vertical-line)]
-    (*
-     (count (utils/take-upto #(>= % tree) east-line))
-     (count (utils/take-upto #(>= % tree) south-line))
-     (count (utils/take-upto #(>= % tree) (reverse north-line)))
-     (count (utils/take-upto #(>= % tree) (reverse west-line))))))
-
-(defn part-1 [input]
+(defn solver [input]
   (let [tree-map (parse-map input)
-        visible (filter (fn [i] (visible? tree-map i)) (range 0 (count (flatten tree-map))))]
-    (count visible)))
+        result (map (partial find-good-spots tree-map) (range 0 (count (flatten tree-map))))]
+    {:visible-count (count (filter :visible result))
+     :scenic-score (apply max (map :scenic-score result))}))
 
-(defn part-2 [input]
-  (let [tree-map (parse-map input)
-        scenic-scores (map (fn [i] (scenic-score tree-map i)) (range 0 (count (flatten tree-map))))]
-    (apply max scenic-scores)))
+(defn part-1 [input] (:visible-count (solver input)))
+(defn part-2 [input] (:scenic-score (solver input)))
 
 (comment
   (= 1693 (part-1 input))
   (= 422059 (part-2 input)))
-
