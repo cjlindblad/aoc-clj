@@ -6,9 +6,8 @@
 
 (defn parse-instruction [line]
   (let [[operation value] (string/split line #" ")]
-    (case operation
-      "noop" [{:op :noop}]
-      "addx" [{:op :addx :val 0} {:op :addx :val (Integer/parseInt value)}])))
+    (cond-> [{:op :noop}]
+      (= operation "addx") (conj {:op :addx :val (Integer/parseInt value)}))))
 
 (defn eval-instruction [x {:keys [op val]}]
   (if (#{:noop} op) x (+ x val)))
