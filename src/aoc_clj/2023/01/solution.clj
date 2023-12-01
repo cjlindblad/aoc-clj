@@ -6,7 +6,7 @@
 (defn is-digit? [char]
   (<= (int \0) (int char) (int \9)))
 
-(def number-name->number
+(def digit-name->digit
   {"one" "1"
    "two" "2"
    "three" "3"
@@ -17,7 +17,7 @@
    "eight" "8"
    "nine" "9"})
 
-(def number-regex (re-pattern (str "(?=(" (str/join "|" (conj (keys number-name->number) "\\d")) "))")))
+(def digit-regex (re-pattern (str "(?=(" (str/join "|" (conj (keys digit-name->digit) "\\d")) "))")))
 
 (defn part-1-solver [input-lines]
   (map (partial filter is-digit?) input-lines))
@@ -25,9 +25,9 @@
 (defn part-2-solver [input-lines]
   (->> input-lines
        (map (comp
-             (partial map #(number-name->number % %))
+             (partial map #(digit-name->digit % %))
              (partial map last)
-             (partial re-seq number-regex)))))
+             (partial re-seq digit-regex)))))
 
 (defn solver [input solver-fn]
   (->> (str/split input #"\n")
