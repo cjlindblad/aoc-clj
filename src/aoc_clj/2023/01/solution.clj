@@ -6,9 +6,8 @@
 (defn is-digit? [char]
   (<= (int \0) (int char) (int \9)))
 
-(def number-str->value
-  {"zero" "0"
-   "one" "1"
+(def number-name->number
+  {"one" "1"
    "two" "2"
    "three" "3"
    "four" "4"
@@ -18,24 +17,24 @@
    "eight" "8"
    "nine" "9"})
 
+(def number-regex (re-pattern (str "(?=(" (str/join "|" (conj (keys number-name->number) "\\d")) "))")))
+
 (defn part-1-solver [input-lines]
-  (->> input-lines
-       (map (comp
-             (fn [digits] (str (first digits) (last digits)))
-             (partial filter is-digit?)))))
+  (map (partial filter is-digit?) input-lines))
 
 (defn part-2-solver [input-lines]
   (->> input-lines
        (map (comp
-             (fn [digits] (str (first digits) (last digits)))
-             (partial map #(number-str->value % %))
+             (partial map #(number-name->number % %))
              (partial map last)
-             (partial re-seq #"(?=(zero|one|two|three|four|five|six|seven|eight|nine|\d))")))))
+             (partial re-seq number-regex)))))
 
 (defn solver [input solver-fn]
   (->> (str/split input #"\n")
        solver-fn
-       (map #(Integer/parseInt %))
+       (map (comp
+             #(Integer/parseInt %)
+             (fn [digits] (str (first digits) (last digits)))))
        (reduce +)))
 
 (defn part-1 [input] (solver input part-1-solver))
