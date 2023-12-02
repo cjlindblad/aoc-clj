@@ -22,12 +22,10 @@
        (map :id)
        (apply +)))
 
-(defn minimal-cube-power [{:keys [max-red max-green max-blue]}]
-  (* max-red max-green max-blue))
-
 (defn part-2 [input]
   (->> (map parse-input-line input)
-       (map minimal-cube-power)
+       (map (juxt :max-red :max-green :max-blue))
+       (map (partial apply *))
        (apply +)))
 
 (comment
