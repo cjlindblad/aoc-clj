@@ -1,4 +1,4 @@
-(ns aoc-clj.2023.03.solution
+(ns aoc-clj.2023.06.solution
   (:require [clojure.string :as str]))
 
 (def input (slurp "src/aoc_clj/2023/03/input.txt"))
