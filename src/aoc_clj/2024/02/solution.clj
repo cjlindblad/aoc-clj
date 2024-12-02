@@ -10,18 +10,11 @@
        (map #(Math/abs %))
        (remove #{1 2 3})
        count
-       (= 0)))
+       zero?))
 
 (defn safe? [report]
-  (and
-   (or (apply < report) (apply > report))
-   (valid-diffs? report)))
-
-(defn part-1 [input]
-  (->> (str/split input #"\n")
-       (mapv #(read-string (str "[" % "]")))
-       (filter safe?)
-       count))
+  (and (or (apply < report) (apply > report))
+       (valid-diffs? report)))
 
 (defn problem-dampen [report]
   (for [i (range (count report))]
@@ -30,17 +23,16 @@
 
 (defn safe-2? [report]
   (let [variants (problem-dampen report)]
-    (pos?
-     (count
-      (filter #(and
-                (or (apply < %) (apply > %))
-                (valid-diffs? %)) variants)))))
+    (some safe? variants)))
 
-(defn part-2 [input]
+(defn solver [f input]
   (->> (str/split input #"\n")
        (mapv #(read-string (str "[" % "]")))
-       (filter safe-2?)
+       (filter f)
        count))
+
+(def part-1 (partial solver safe?))
+(def part-2 (partial solver safe-2?))
 
 (comment
   (= 598 (part-1 input))
