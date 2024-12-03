@@ -11,7 +11,7 @@
 
 (defn part-1 [input]
   (->>  (re-seq #"mul\(\d{1,3},\d{1,3}\)" input)
-        solver)); 173785482
+        solver))
 
 (defn part-2 [input]
   (->>
@@ -27,7 +27,7 @@
         [next-skip next-result]))
     [false []])
    last
-   solver)); 83158140
+   solver))
 
 (comment
   (= 173785482 (part-1 input))
