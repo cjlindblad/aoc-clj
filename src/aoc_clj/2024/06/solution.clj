@@ -20,12 +20,12 @@
     :S [0 1]
     :W [-1 0]))
 
-(defn next-pos [area {:keys [x y direction]}]
+(defn next-pos [{:keys [x y direction]}]
   (let [[dx dy] (direction-delta direction)]
     [(+ dx x) (+ dy y)]))
 
-(defn blocked? [area {:keys [x y direction] :as pos}]
-  (let [[next-x next-y] (next-pos area pos)]
+(defn blocked? [area pos]
+  (let [[next-x next-y] (next-pos pos)]
     (-> (get-in area [next-y next-x])
         (= \#))))
 
@@ -40,7 +40,7 @@
 (defn move [area {:keys [x y direction inside] :as pos}]
   (let [blocked (blocked? area pos)
         next-direction (if blocked (turn-right direction) direction)
-        [next-x next-y] (next-pos area {:x x :y y :direction next-direction})]
+        [next-x next-y] (next-pos {:x x :y y :direction next-direction})]
     {:x next-x :y next-y :direction next-direction :inside (inside? area [next-x next-y])}))
 
 (defn walk [area pos]
