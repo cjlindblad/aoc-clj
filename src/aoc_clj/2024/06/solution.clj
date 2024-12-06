@@ -74,7 +74,6 @@
   (let [positions (walk input (starting-pos input))
         area (mapv (partial mapv identity) input)
         candidates (utils/distinct-by last (map-indexed (fn [idx {:keys [x y]}] [(nth positions idx) (assoc-in area [y x] \#)]) (rest positions)))
-        ;; we could be smarter about starting position here
         loops (filter identity (pmap (fn [[start-pos candidate]] (loop? candidate (assoc start-pos :inside true))) candidates))]
     (count loops)))
 
