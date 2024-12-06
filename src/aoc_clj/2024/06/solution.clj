@@ -1,5 +1,6 @@
 (ns aoc-clj.2024.06.solution
-  (:require [clojure.string :as str]))
+  (:require [clojure.string :as str]
+            [aoc-clj.utils :as utils]))
 
 (def input (str/split (slurp "src/aoc_clj/2024/06/input.txt") #"\n"))
 (def test-input (str/split (slurp "src/aoc_clj/2024/06/test-input.txt") #"\n"))
@@ -37,7 +38,7 @@
         max-x (dec (count (first area)))]
     (and (<= 0 x max-x) (<= 0 y max-y))))
 
-(defn move [area {:keys [x y direction inside] :as pos}]
+(defn move [area {:keys [x y direction] :as pos}]
   (let [blocked (blocked? area pos)
         next-direction (if blocked (turn-right direction) direction)
         really-blocked (blocked? area (assoc pos :direction next-direction))
@@ -70,12 +71,11 @@
             (recur npos (conj visited npos)))))))
 
 (defn part-2 [input]
-  (let [positions (rest (walk input (starting-pos input)))
+  (let [positions (walk input (starting-pos input))
         area (mapv (partial mapv identity) input)
-        candidates (distinct (map (fn [{:keys [x y]}] (assoc-in area [y x] \#)) positions))
-        start-pos (starting-pos input)
+        candidates (utils/distinct-by last (map-indexed (fn [idx {:keys [x y]}] [(nth positions idx) (assoc-in area [y x] \#)]) (rest positions)))
         ;; we could be smarter about starting position here
-        loops (filter (fn [candidate] (loop? candidate (assoc start-pos :inside true))) candidates)]
+        loops (filter identity (pmap (fn [[start-pos candidate]] (loop? candidate (assoc start-pos :inside true))) candidates))]
     (count loops)))
 
 (comment
