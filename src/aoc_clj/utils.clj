@@ -33,3 +33,20 @@
 (defn distinct-by [f coll]
   (let [groups (group-by f coll)]
     (map #(first (groups %)) (distinct (map f coll)))))
+
+(defn binary-sequences [n zero one]
+  (if (zero? n)
+    [[]]
+    (let [smaller (binary-sequences (dec n) zero one)]
+      (concat
+       (map #(cons zero %) smaller)
+       (map #(cons one %) smaller)))))
+
+(defn binary-sequences-2 [n zero one two]
+  (if (zero? n)
+    [[]]
+    (let [smaller (binary-sequences-2 (dec n) zero one two)]
+      (concat
+       (map #(cons zero %) smaller)
+       (map #(cons one %) smaller)
+       (map #(cons two %) smaller)))))
