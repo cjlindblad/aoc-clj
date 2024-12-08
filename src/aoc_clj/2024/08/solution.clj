@@ -17,7 +17,9 @@
        (into {})))
 
 (defn all-pairs [things]
-  (for [i things j things :when (not= i j)]
+  (for [i things
+        j things
+        :when (not= i j)]
     [i j]))
 
 (defn inside? [[max-x max-y] [x y]]
@@ -27,11 +29,17 @@
   (let [xd (- x1 x2) yd (- y1 y2)]
     [(+ x1 xd) (+ y1 yd)]))
 
-; TODO does not care if they are inside or not
 (defn positions->antinodes [positions]
   (->> (map all-pairs positions)
        (mapcat (partial map antinode-position))
        distinct))
+
+(defn part-1 [input]
+  (let [max-y (dec (count input))
+        max-x (dec (count (first input)))
+        positions (map last (positions-by-antenna input))
+        antinodes (filter (partial inside? [max-x max-y]) (positions->antinodes positions))]
+    (count antinodes)))
 
 (defn antinode-position-2 [[max-x max-y] [[x1 y1] [x2 y2]]]
   (let [dx (- x1 x2) dy (- y1 y2)]
@@ -46,19 +54,14 @@
        (mapcat (partial mapcat (partial antinode-position-2 [max-x max-y])))
        distinct))
 
-(defn part-1 [input]
-  (let [max-y (dec (count input))
-        max-x (dec (count (first input)))
-        positions (map last (positions-by-antenna input))
-        antinodes (filter (partial inside? [max-x max-y]) (positions->antinodes positions))]
-    (count antinodes)))
-
 (defn part-2 [input]
   (let [max-y (dec (count input))
         max-x (dec (count (first input)))
         positions (filter #(< 1 (count %)) (map last (positions-by-antenna input)))
         antinodes (positions->antinodes-2 [max-x max-y] positions)]
-    (count (distinct (concat antinodes (mapcat identity positions))))))
+    (-> (concat (mapcat identity positions) antinodes)
+        distinct
+        count)))
 
 (comment
   (= 367 (part-1 input))
