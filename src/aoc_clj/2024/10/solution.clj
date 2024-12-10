@@ -1,10 +1,7 @@
 (ns aoc-clj.2024.10.solution
   (:require [clojure.string :as str]
             [loom.graph :as graph]
-            [loom.io :as io]
-            [loom.alg :as alg]
-            [loom.attr :as attrs]
-            [loom.derived :as derived]))
+            [loom.alg :as alg]))
 
 (def input (slurp "src/aoc_clj/2024/10/input.txt"))
 (def test-input (slurp "src/aoc_clj/2024/10/test-input.txt"))
@@ -24,9 +21,8 @@
   (->> (map (fn [[dx dy]] [(+ x dx) (+ y dy)]) deltas)
        (filter (fn [[x y]] (and (<= 0 x max-x) (<= 0 y max-y))))))
 
-(defn build-nodes [input]
-  (let [lines (parse-lines input)
-        get-node (fn [[x y]] {:x x :y y :v (get-in lines [y x])})
+(defn build-nodes [lines]
+  (let [get-node (fn [[x y]] {:x x :y y :v (get-in lines [y x])})
         max-x (dec (count (first lines)))
         max-y (dec (count lines))
         coords (for [x (range (inc max-x)) y (range (inc max-y))] [x y])
@@ -49,7 +45,8 @@
    nodes))
 
 (defn part-1 [input]
-  (let [nodes (build-nodes input)
+  (let [lines (parse-lines input)
+        nodes (build-nodes lines)
         g (build-graph nodes)
         start-nodes (filter (fn [node] (= 0 (:v node))) (map first nodes))
         spans (map (fn [start-node] (alg/dijkstra-span g start-node)) start-nodes)
@@ -57,5 +54,26 @@
     (->> (map count paths)
          (reduce +))))
 
+(defn all-paths
+  [g start end-v]
+  (letfn [(dfs [current visited path]
+            (if (= (:v current) end-v)
+              [path]
+              (for [neighbor (graph/successors g current)
+                    :when (not (visited neighbor))
+                    path (dfs neighbor (conj visited neighbor) (conj path neighbor))]
+                path)))]
+    (dfs start #{start} [start])))
+
+(defn part-2 [input]
+  (let [lines (parse-lines input)
+        nodes (build-nodes lines)
+        g (build-graph nodes)
+        start-nodes (filter (fn [node] (= 0 (:v node))) (map first nodes))
+        paths (map (fn [node] (all-paths g node 9)) start-nodes)]
+    (->> (map count paths)
+         (reduce +))))
+
 (comment
-  (= 820 (part-1 input)))
+  (= 820 (part-1 input))
+  (= 1786 (part-2 input)))
