@@ -21,34 +21,26 @@ test-input
   (let [prizes (str/split input #"\n\n")]
     (map parse-prize prizes)))
 
-(defn vec-add [[a1 a2] [b1 b2]]
-  [(+ a1 b1) (+ a2 b2)])
+(defn get-cost [[[ax ay] [bx by] [px py]]]
+  (let [b (/ (- (* py ax) (* px ay)) (- (* by ax) (* bx ay)))
+        a (/ (- px (* b bx)) ax)]
+    [a b]))
 
-(defn vec-mult [[a1 a2] n]
-  [(* a1 n) (* a2 n)])
-
-(defn valid-sequences [button-a button-b goal]
-  (for [a-count (range 201)
-        b-count (range 201)
-        :when (and
-               (<= (+ a-count b-count) 200)
-               (= goal (vec-add (vec-mult button-a a-count) (vec-mult  button-b b-count))))]
-    [a-count b-count]))
-
-(defn sequence-cost [sequence]
-  (map (fn [[a b]] (+ (* 3 a) b)) sequence))
-
-(defn cheapest-sequence [sequences]
-  (->> sequences
-       sort
-       first))
+(defn solver [prizes]
+  (let [presses (map get-cost prizes)
+        valid-presses (filter (fn [[a b]] (and (int? a) (int? b))) presses)
+        costs (map (fn [[a b]] (+ (* 3 a) b)) valid-presses)]
+    (reduce + costs)))
 
 (defn part-1 [input]
+  (let [prizes (parse-input input)]
+    (solver prizes)))
+
+(defn part-2 [input]
   (let [prizes (parse-input input)
-        sequences (map (fn [[a b goal]] (valid-sequences a b goal)) prizes)
-        costs (map sequence-cost sequences)
-        cheapest (filter identity (map cheapest-sequence costs))]
-    (reduce + cheapest)))
+        huge-prizes (map (fn [[a b [px py]]] [a b [(+ px 10000000000000) (+ py 10000000000000)]]) prizes)]
+    (solver huge-prizes)))
 
 (comment
-  (= 29187 (part-1 input)))
+  (= 29187 (part-1 input))
+  (= 99968222587852 (part-2 input)))
