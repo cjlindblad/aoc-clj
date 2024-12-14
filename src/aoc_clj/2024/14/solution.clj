@@ -1,9 +1,5 @@
 (ns aoc-clj.2024.14.solution
-  (:require [clojure.string :as str]
-            [clojure.set :as set]
-            [loom.graph :as graph]
-            [loom.alg :as alg]
-            [loom.io :as io]))
+  (:require [clojure.string :as str]))
 
 (def input (slurp "src/aoc_clj/2024/14/input.txt"))
 (def test-input (slurp "src/aoc_clj/2024/14/test-input.txt"))
@@ -38,7 +34,7 @@
   (map (fn [robot] (move robot [max-x max-y])) robots))
 
 (defn simulate-steps [robots [max-x max-y] n]
-  (loop [robots robots n 100]
+  (loop [robots robots n n]
     (if (zero? n)
       robots
       (recur (simulate-step robots [max-x max-y]) (dec n)))))
@@ -59,9 +55,24 @@
         [max-x max-y] (map-size robots)
         moved-robots (simulate-steps robots [max-x max-y] 100)
         robots-by-quadrant (group-by (fn [[[x y] _]] (quadrant [x y] [max-x max-y])) moved-robots)]
-    (->> (filter (fn [[k v]] k) robots-by-quadrant)
-         (map (fn [[k v]] (count v)))
+    (->> (filter (fn [[k _]] k) robots-by-quadrant)
+         (map (fn [[_ v]] (count v)))
          (reduce *))))
 
+(defn simulate-until-unique [robots [max-x max-y]]
+  (let [robot-count (count robots)]
+    (loop [robots robots n 0]
+      (let [coord-set (into #{} (map (fn [[coord _]] coord) robots))
+            set-count (count coord-set)]
+        (if (= set-count robot-count)
+          n
+          (recur (simulate-step robots [max-x max-y]) (inc n)))))))
+
+(defn part-2 [input]
+  (let [robots (parse-input input)
+        [max-x max-y] (map-size robots)]
+    (simulate-until-unique robots [max-x max-y])))
+
 (comment
-  (= 222208000 (part-1 input)))
+  (= 222208000 (part-1 input))
+  (= 7623 (part-2 input)))
