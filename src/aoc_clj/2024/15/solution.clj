@@ -1,9 +1,5 @@
 (ns aoc-clj.2024.15.solution
-  (:require [clojure.string :as str]
-            [clojure.set :as set]
-            [loom.graph :as graph]
-            [loom.alg :as alg]
-            [loom.io :as io]))
+  (:require [clojure.string :as str]))
 
 (def input (slurp "src/aoc_clj/2024/15/input.txt"))
 (def test-input (slurp "src/aoc_clj/2024/15/test-input.txt"))
@@ -90,12 +86,11 @@
        (reduce +)))
 
 (defn part-1 [input]
-  (let [{:keys [warehouse directions max-x max-y]} (parse-input input)
+  (let [{:keys [warehouse directions]} (parse-input input)
         final-warehouse (reduce (fn [w d] (move w d)) warehouse directions)]
     (score final-warehouse)))
 
 (defn widened-pair [thing]
-  ; TODO wat??!
   (case thing
     \. [\. \.]
     \@ [\@ \.]
@@ -104,14 +99,15 @@
     "!"))
 
 (defn parse-map-2 [lines [max-x max-y]]
-  (let [positions (->> (for [x (range (inc max-x)) y (range (inc max-y))]
-                         (let [[left right] (widened-pair (get-in lines [y x]))]
-                           [[left [(* 2 x) y]]
-                            [right [(inc (* 2 x)) y]]]))
-                       (mapcat identity)
-                       (group-by first)
-                       (map (fn [[k v]] [k (into #{} (map last v))]))
-                       (into {}))]
+  (let [positions
+        (->> (for [x (range (inc max-x)) y (range (inc max-y))]
+               (let [[left right] (widened-pair (get-in lines [y x]))]
+                 [[left [(* 2 x) y]]
+                  [right [(inc (* 2 x)) y]]]))
+             (mapcat identity)
+             (group-by first)
+             (map (fn [[k v]] [k (into #{} (map last v))]))
+             (into {}))]
     {:walls (positions \#)
      :left-boxes (positions \[)
      :right-boxes (positions \])
@@ -142,10 +138,107 @@
              (at-warehouse-pos-2 warehouse pos))))
        (map #(str/join "" %))))
 
-(let [input test-input]
-  (let [{:keys [warehouse directions max-x max-y]} (parse-input-2 input)]
-    (visualize-2 warehouse [max-x max-y])))
+(defn get-pushable-line-2 [warehouse pos delta]
+  (loop [line [] pos pos]
+    (let [next-pos (apply-delta pos delta)
+          next-thing (at-warehouse-pos-2 warehouse pos)]
+      (case next-thing
+        "#" nil
+        "." line
+        "[" (recur (conj line [:left-boxes pos next-pos]) next-pos)
+        "]" (recur (conj line [:right-boxes pos next-pos]) next-pos)))))
+
+(defn update-warehouse [warehouse updates]
+  (reduce
+   (fn [w [thing old new]]
+     (-> (update w thing disj old)
+         (update thing conj new)))
+   warehouse updates))
+
+(defn shift-left [[x y]] [(dec x) y])
+(defn shift-right [[x y]] [(inc x) y])
+
+(defn vertical-box-push [warehouse left-pos right-pos delta]
+  (let [next-left-pos (apply-delta left-pos delta)
+        next-left (at-warehouse-pos-2 warehouse next-left-pos)
+        next-right-pos (apply-delta right-pos delta)
+        next-right (at-warehouse-pos-2 warehouse next-right-pos)]
+    (cond
+      (or (= "#" next-left) (= "#" next-right))
+      nil
+
+      (= ["." "."] [next-left next-right])
+      [[:left-boxes left-pos next-left-pos]
+       [:right-boxes right-pos next-right-pos]]
+
+      (= ["[" "]"] [next-left next-right])
+      (let [next-push (vertical-box-push warehouse next-left-pos next-right-pos delta)]
+        (if (seq next-push)
+          (concat next-push
+                  [[:left-boxes left-pos next-left-pos]
+                   [:right-boxes right-pos next-right-pos]])))
+
+      (= ["]" "["] [next-left next-right])
+      (let [next-left-push (vertical-box-push warehouse (shift-left next-left-pos) next-left-pos delta)
+            next-right-push (vertical-box-push warehouse next-right-pos (shift-right next-right-pos) delta)]
+        (if (and (seq next-left-push) (seq next-right-push))
+          (concat (concat next-left-push next-right-push)
+                  [[:left-boxes left-pos next-left-pos]
+                   [:right-boxes right-pos next-right-pos]])))
+
+      (= "]" next-left)
+      (let [next-push (vertical-box-push warehouse (shift-left next-left-pos) next-left-pos  delta)]
+        (if (seq next-push)
+          (concat next-push
+                  [[:left-boxes left-pos next-left-pos]
+                   [:right-boxes right-pos next-right-pos]])))
+
+      (= "[" next-right)
+      (let [next-push (vertical-box-push warehouse next-right-pos (shift-right next-right-pos) delta)]
+        (if (seq next-push)
+          (concat next-push
+                  [[:left-boxes left-pos next-left-pos]
+                   [:right-boxes right-pos next-right-pos]]))))))
+
+(defn move-2 [warehouse direction]
+  (let [delta (direction-delta direction)
+        robot (first (:robot warehouse))
+        next-robot-pos (apply-delta robot delta)
+        next-location (at-warehouse-pos-2 warehouse next-robot-pos)]
+    (case next-location
+      "#" warehouse
+      "." (assoc warehouse :robot #{next-robot-pos})
+      "[" (case direction
+            ">" (let [positions-to-update (get-pushable-line-2 warehouse next-robot-pos delta)]
+                  (update-warehouse warehouse (if (seq positions-to-update) (conj positions-to-update [:robot robot next-robot-pos]) positions-to-update)))
+            "^" (let [positions-to-update
+                      (vertical-box-push warehouse next-robot-pos (shift-right next-robot-pos) delta)]
+                  (update-warehouse warehouse (if (seq positions-to-update) (conj positions-to-update [:robot robot next-robot-pos]) positions-to-update)))
+            "v" (let [positions-to-update
+                      (vertical-box-push warehouse next-robot-pos (shift-right next-robot-pos) delta)]
+                  (update-warehouse warehouse (if (seq positions-to-update) (conj positions-to-update [:robot robot next-robot-pos]) positions-to-update))))
+
+      "]" (case direction
+            "<" (let [positions-to-update (get-pushable-line-2 warehouse next-robot-pos delta)]
+                  (update-warehouse warehouse (if (seq positions-to-update) (conj positions-to-update [:robot robot next-robot-pos]) positions-to-update)))
+            "^" (let [positions-to-update
+                      (vertical-box-push warehouse (shift-left next-robot-pos) next-robot-pos delta)]
+                  (update-warehouse warehouse (if (seq positions-to-update) (conj positions-to-update [:robot robot next-robot-pos]) positions-to-update)))
+            "v" (let [positions-to-update
+                      (vertical-box-push warehouse (shift-left next-robot-pos) next-robot-pos delta)]
+                  (update-warehouse warehouse (if (seq positions-to-update) (conj positions-to-update [:robot robot next-robot-pos]) positions-to-update)))))))
+
+(defn score-2 [warehouse]
+  (->> (:left-boxes warehouse)
+       (map (fn [[x y]] (+ x (* 100 y))))
+       (reduce +)))
+
+(defn part-2 [input]
+  (let [{:keys [warehouse directions]} (parse-input-2 input)
+        final-warehouse (reduce (fn [w d] (move-2 w d)) warehouse directions)]
+    (score-2 final-warehouse)))
 
 (comment
-  (= 1398947 (part-1 input)))
+  (= 1398947 (part-1 input))
+  (= 1397393 (part-2 input)))
 
