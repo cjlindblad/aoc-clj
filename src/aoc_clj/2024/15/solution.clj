@@ -94,7 +94,57 @@
         final-warehouse (reduce (fn [w d] (move w d)) warehouse directions)]
     (score final-warehouse)))
 
-(part-1 input) ; 1398947
+(defn widened-pair [thing]
+  ; TODO wat??!
+  (case thing
+    \. [\. \.]
+    \@ [\@ \.]
+    \# [\# \#]
+    \O [\[ \]]
+    "!"))
+
+(defn parse-map-2 [lines [max-x max-y]]
+  (let [positions (->> (for [x (range (inc max-x)) y (range (inc max-y))]
+                         (let [[left right] (widened-pair (get-in lines [y x]))]
+                           [[left [(* 2 x) y]]
+                            [right [(inc (* 2 x)) y]]]))
+                       (mapcat identity)
+                       (group-by first)
+                       (map (fn [[k v]] [k (into #{} (map last v))]))
+                       (into {}))]
+    {:walls (positions \#)
+     :left-boxes (positions \[)
+     :right-boxes (positions \])
+     :robot (positions \@)}))
+
+(defn parse-input-2 [input]
+  (let [[map-string moves-string] (str/split input #"\n\n")
+        map-lines (str/split map-string #"\n")
+        max-y (dec (count map-lines))
+        max-x (dec (* 2 (count (first map-lines))))]
+    {:warehouse (parse-map-2 map-lines [max-x max-y])
+     :max-x max-x
+     :max-y max-y
+     :directions (parse-moves moves-string)}))
+
+(defn at-warehouse-pos-2 [warehouse pos]
+  (cond
+    ((warehouse :walls) pos) "#"
+    ((warehouse :left-boxes) pos) "["
+    ((warehouse :right-boxes) pos) "]"
+    ((warehouse :robot) pos) "@"
+    :else "."))
+
+(defn visualize-2 [warehouse [max-x max-y]]
+  (->> (for [y (range (inc max-y))]
+         (for [x (range (inc max-x))]
+           (let [pos [x y]]
+             (at-warehouse-pos-2 warehouse pos))))
+       (map #(str/join "" %))))
+
+(let [input test-input]
+  (let [{:keys [warehouse directions max-x max-y]} (parse-input-2 input)]
+    (visualize-2 warehouse [max-x max-y])))
 
 (comment
   (= 1398947 (part-1 input)))
