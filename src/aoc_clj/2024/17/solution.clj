@@ -3,6 +3,7 @@
 
 (def input (slurp "src/aoc_clj/2024/17/input.txt"))
 (def test-input (slurp "src/aoc_clj/2024/17/test-input.txt"))
+(def test-input-2 (slurp "src/aoc_clj/2024/17/test-input-2.txt"))
 
 (defn parse-long [n] (Long/parseLong n))
 
@@ -58,7 +59,6 @@
                 (recur (+ ip 2)))
 
             3 (let [A (@state :A)]
-
                 (if (zero? A)
                   (recur (+ ip 2))
                   (recur operand)))
@@ -81,6 +81,7 @@
                     result (quot numerator denominator)]
                 (swap! state assoc :B result)
                 (recur (+ ip 2)))
+
             7 (let [numerator (@state :A)
                     combo (get-combo state operand)
                     denominator (int (Math/pow 2 combo))
@@ -94,5 +95,13 @@
     (->> (:out final-state)
          (str/join ","))))
 
+(defn part-2 [input a]
+  (let [{:keys [instructions]} (parse-input input)]
+    (->> (execute {:reg-a a :reg-b 0 :reg-c 0 :instructions instructions})
+         :out)))
+
 (comment
-  (= "2,1,0,4,6,2,4,2,0" (part-1 input)))
+  (= "2,1,0,4,6,2,4,2,0" (part-1 input))
+  ; part 2 solved on paper
+  (= (:instructions (parse-input input))
+     (part-2 input 03074103313322340)))
