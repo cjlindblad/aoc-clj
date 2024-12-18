@@ -1,16 +1,14 @@
 (ns aoc-clj.2024.18.solution
   (:require [clojure.string :as str]
-            [clojure.set :as set]
             [loom.graph :as graph]
-            [loom.alg :as alg]
-            [loom.io :as io]))
+            [loom.alg :as alg]))
 
 (def input (slurp "src/aoc_clj/2024/18/input.txt"))
 (def test-input (slurp "src/aoc_clj/2024/18/test-input.txt"))
 
 (defn parse-input [input]
   (->> (str/split input #"\n")
-       (map #(read-string (str "[" % "]")))))
+       (mapv #(read-string (str "[" % "]")))))
 
 (defn create-memory [size]
   (mapv identity (repeat (* size size) \.)))
@@ -21,22 +19,14 @@
 (defn in-bounds? [size i]
   (<= 0 i (dec (* size size))))
 
-; TODO do not skip from right side to left
-(defn neighbour-indices [coord size]
-  (->> (mapv (partial mapv + coord) [[1 0] [0 1] [-1 0] [0 -1]])
-       (map (partial coord->index size))
-       (filter (partial in-bounds? size))))
-
 (defn neighbour-indices [i size]
-  (filter identity [(when-not (zero? (mod i size)) (dec i))
-                    (when-not (zero? (mod i (dec size))) (inc i))
-                    (when-not (zero? (mod (quot i size) size)) (- i size))
-                    (when-not (= (dec size) (mod (quot i size) size)) (+ i size))])
-
-  #_(->> (mapv (partial + i) [1 -1 size (- size)])
-         (filter (partial in-bounds? size))))
-
-(neighbour-indices 6 7)
+  (filter
+   identity
+   [(when-not (zero? (mod i size)) (dec i)) ; left
+    (when-not (= (dec size) (mod i size)) (inc i)) ; right
+    (when-not (zero? (mod (quot i size) size)) (- i size)) ; up
+    (when-not (= (dec size) (mod (quot i size) size)) (+ i size)) ; down
+    ]))
 
 (defn graph-data [memory  size]
   (->> (for [i (range (* size size))]
@@ -66,6 +56,20 @@
          count
          dec)))
 
+(defn part-2 [input size]
+  (let [byte-coords (parse-input input)
+        memory (create-memory size)]
+    (loop [memory memory coords byte-coords]
+      (let [next-memory (place-bytes memory size coords)
+            g-data (graph-data next-memory size)
+            g (apply graph/weighted-digraph g-data)
+            path (alg/dijkstra-path g 0 (dec (* size size)))]
+        (if (zero? (count path))
+          (recur memory (drop-last coords))
+          (let [[x y] (first (drop (count coords) byte-coords))]
+            (str x "," y)))))))
+
 (comment
-  (= 506 (part-1 input 71 1024)))
+  (= 506 (part-1 input 71 1024))
+  (= "62,6" (part-2 input 71)))
 
