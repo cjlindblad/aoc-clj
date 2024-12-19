@@ -30,4 +30,36 @@
     (->> (filter (fn [towel] (buildable? dictionary towel)) designs)
          count)))
 
-(part-1 input)
+(defn arrangements-recursive [dictionary remaining memo]
+  (if (@memo remaining)
+    (@memo remaining)
+    (if-not (seq remaining)
+      [""]
+      (let [result (atom [])]
+        (doseq [i (range 1 (inc (count remaining)))]
+          (let [prefix (subs remaining 0 i)]
+            (when (dictionary prefix)
+              (let [suffix-ways (arrangements-recursive dictionary (subs remaining i) memo)]
+                (doseq [way suffix-ways]
+                  (if (= "" way)
+                    (swap! result conj prefix)
+                    (swap! result conj (str prefix " " way))))))))
+
+        (swap! memo assoc remaining @result)
+        @result))))
+
+(defn arrangements [dictionary design]
+  (arrangements-recursive dictionary design (atom {})))
+
+(defn part-2 [input]
+  (let [{:keys [towels designs]} (parse-input input)
+        dictionary (into #{} towels)
+        valid-designs (filter (fn [towel] (buildable? dictionary towel)) designs)]
+    ;(arrangements dictionary (first valid-designs))
+    (->> (map (fn [design] (arrangements dictionary design)) valid-designs)
+         (map count)
+         (reduce +))))
+
+(part-2 input)
+
+;(part-1 input) ; 209
