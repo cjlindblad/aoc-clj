@@ -1,5 +1,6 @@
 (ns aoc-clj.2024.21.solution
   (:require [clojure.string :as str]
+            [clojure.math.combinatorics :as combo]
             [clojure.set :as set]
             [loom.graph :as graph]
             [loom.alg :as alg]
@@ -75,22 +76,50 @@
         nodes-to-add (mapv (fn [end-node] [end-node :goal 0]) end-nodes)]
     (apply graph/add-edges g nodes-to-add)))
 
-(defn numpad-path [from to]
-  (let [numpad-graph-data (build-graph-data numpad #{\0 \1 \2 \3 \4 \5 \6 \7 \8 \9 \A})
-        numpad-graph (graph/weighted-digraph numpad-graph-data)
-        with-start (add-start-node numpad-graph from)
-        with-goal (add-goal-node with-start to)]
-    (->> (alg/dijkstra-path with-goal :start :goal)
-         (drop 2)
-         (drop-last 1)
-         (mapv last))))
+(defn valid-path? [area [start-x start-y] ds]
+  (let [path (loop [result [(get-in area [start-y start-x])]
+                    x start-x
+                    y start-y
+                    ds ds]
+               (if (seq ds)
+                 (let [[next-x next-y] (mapv + [x y] (first ds))]
+                   (recur (conj result (get-in area [next-y next-x]))
+                          next-x
+                          next-y
+                          (rest ds)))
+                 result))]
+    (not-any? #{\space} path)))
 
-(defn numpad-sequence [ns]
-  (let [from-tos (partition 2 1 (concat [\A] ns))]
-    (->> (map (fn [[from to]] (numpad-path from to)) from-tos)
-         (mapv (fn [x] (concat x [\A])))
-         (map (partial apply str))
-         (apply str))))
+(defn delta->direction [[dx dy]]
+  (case [dx dy]
+    [1 0] \>
+    [-1 0] \<
+    [0 1] \v
+    [0 -1] \^))
+
+(defn paths [area from to]
+  ; TODO a bit slow, but hey..
+  (let [from-coord (first (for [y (range (count area))
+                                x (range (count (first area)))
+                                :when (= from (get-in area [y x]))]
+                            [x y]))
+        to-coord (first (for [y (range (count area))
+                              x (range (count (first area)))
+                              :when (= to (get-in area [y x]))]
+                          [x y]))
+        [dx dy] (mapv - to-coord from-coord)
+        dxs (repeat (Math/abs dx) (if (pos? dx) [1 0] [-1 0]))
+        dys (repeat (Math/abs dy) (if (pos? dy) [0 1] [0 -1]))
+        ds (filter (fn [permutation] (valid-path? area from-coord permutation)) (combo/permutations (concat dxs dys)))]
+    (mapv (partial mapv delta->direction) ds)))
+
+(defn all-paths [area cs]
+  (let [from-tos (partition 2 1 (concat [\A] cs))
+        ps (mapv (fn [[from to]] (paths area from to)) from-tos)]
+    (->> (apply combo/cartesian-product ps)
+         (map (partial map (fn [x] (conj x \A))))
+         (map (partial reduce concat))
+         (map (partial apply str)))))
 
 ;; TODO could be parameterized and merged with numpad-path
 (defn dirpad-path [from to]
@@ -110,31 +139,18 @@
          (map (partial apply str))
          (apply str))))
 
-(defn code-complexity [code]
-  (let [seq-1 (numpad-sequence code)
-        seq-2 (dirpad-sequence seq-1)
-        seq-3 (dirpad-sequence seq-2)
+(defn code-complexity-new [code]
+  (let [num-paths (all-paths numpad code)
+        dir-paths (map dirpad-sequence num-paths)
+        dir-paths-2 (map dirpad-sequence dir-paths)
         numeric-part (parse-long (subs code 0 3))]
-    (* numeric-part (count seq-3))))
+    (apply min (map #(* numeric-part (count %)) dir-paths-2))))
 
 (defn part-1 [input]
   (->> (str/split input #"\n")
-       (map code-complexity)
+       (map code-complexity-new)
        (reduce +)))
 
-; TODO we need to find ALL shortest paths for each step, and check which is the shortest after all expansions. Solve day 16 first?
-(part-1 test-input)
-; 185828 too high
-; (["029A" 68 29]
-;  ["980A" 60 980]
-;  ["179A" 68 179]
-;  ["456A" 64 456]
-;  ["379A" 68 379])
-
-(code-complexity "029A")
-
-(dirpad-sequence (dirpad-sequence (numpad-sequence "379A")))
-; "^A^^<<A>>AvvvA"
-; "<A>A<AAv<AA>>^AvAA^A<vAAA^>A"
-; "v<<A>>^AvA^Av<<A>>^AA<vA<A>>^AAvAA^<A>A<vA^>AA<A>Av<<A>A^>AAA<Av>A^A"
+(comment
+  (= 179444 (part-1 input)))
 
