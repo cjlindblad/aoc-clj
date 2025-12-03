@@ -6,8 +6,7 @@
 
 (defn parse-input [input]
   (->> (str/split input #"\n")
-       (map (partial mapv #(Character/digit % 10)))
-       ))
+       (map (partial mapv #(Character/digit % 10)))))
 
 (defn largest-joltage [bank]
   (let [first-largest (first (reverse (sort (drop-last 1 bank))))
@@ -18,9 +17,7 @@
 (defn solver-1 [input]
   (->> (parse-input input)
        (map largest-joltage)
-       (reduce +)
-       )
-  )
+       (reduce +)))
 
 (comment
   (= 17229 (solver-1 input)))
