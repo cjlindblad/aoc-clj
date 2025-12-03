@@ -8,17 +8,30 @@
   (->> (str/split input #"\n")
        (map (partial mapv #(Character/digit % 10)))))
 
-(defn largest-joltage [bank]
-  (let [first-largest (first (reverse (sort (drop-last 1 bank))))
-        first-largest-index (.indexOf bank first-largest)
-        second-largest (first (reverse (sort (drop (inc first-largest-index) bank))))]
-    (Long/parseLong (str first-largest second-largest))))
+(defn find-batteries
+  ([batteries bank] (find-batteries batteries bank []))
+  ([batteries-left bank result]
+   (if (zero? batteries-left)
+     (Long/parseLong (apply str result))
+     (let [next-largest (->> (drop-last (dec batteries-left) bank)
+                             sort
+                             reverse
+                             first)
+           next-largest-index (.indexOf bank next-largest)]
+       (recur
+        (dec batteries-left)
+        (drop (inc next-largest-index) bank)
+        (conj result next-largest))))))
 
-(defn solver-1 [input]
+(defn solver [batteries input]
   (->> (parse-input input)
-       (map largest-joltage)
+       (map (partial find-batteries batteries))
        (reduce +)))
 
+(def solver-1 (partial solver 2))
+(def solver-2 (partial solver 12))
+
 (comment
-  (= 17229 (solver-1 input)))
+  (= 17229 (solver-1 input))
+  (= 170520923035051 (solver-2 input)))
 
