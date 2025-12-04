@@ -24,33 +24,30 @@
         :when (not= [xs ys] [x y])]
     [xs ys]))
 
+(defn find-removable-paper-rolls [paper-coords]
+  (filter
+   (fn [[x y]]
+     (let [neighbour-coords (get-neighbour-coords [x y])
+           paper-roll-neighbours (filter paper-coords neighbour-coords)]
+       (< (count paper-roll-neighbours) 4)))
+   paper-coords))
+
 (defn solver-1 [input]
   (let [paper-coords (parse-input input)]
-    (->>
-     (filter
-      (fn [[x y]]
-        (let [neighbour-coords (get-neighbour-coords [x y])
-              paper-roll-neighbours (filter paper-coords neighbour-coords)]
-          (< (count paper-roll-neighbours) 4)))
-      paper-coords)
-     count)))
+    (count (find-removable-paper-rolls paper-coords))))
 
 (defn solver-2
-  ([input] (solver-2 (parse-input input) 0 true))
-  ([paper-coords removed-paper-rolls did-remove-rolls]
-   (if (false? did-remove-rolls)
+  ([input] (solver-2 (parse-input input) 0 false))
+  ([paper-coords removed-paper-rolls finished]
+   (if finished
      removed-paper-rolls
-     (let [removable-paper-rolls (->> (filter
-                                       (fn [[x y]]
-                                         (let [neighbour-coords (get-neighbour-coords [x y])
-                                               paper-roll-neighbours (filter paper-coords neighbour-coords)]
-                                           (< (count paper-roll-neighbours) 4)))
-                                       paper-coords)
-                                      (into #{}))]
+     (let [removable-paper-rolls (->> (find-removable-paper-rolls paper-coords)
+                                      (into #{}))
+           remove-count (count removable-paper-rolls)]
        (recur
         (set/difference paper-coords removable-paper-rolls)
-        (+ removed-paper-rolls (count removable-paper-rolls))
-        (> (count removable-paper-rolls) 0))))))
+        (+ removed-paper-rolls remove-count)
+        (= remove-count 0))))))
 
 (comment
   (= 1393 (solver-1 input))
