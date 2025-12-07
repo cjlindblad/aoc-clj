@@ -19,6 +19,21 @@
        (map (fn [{:keys [numbers operation]}] (apply operation numbers)))
        (reduce +)))
 
+(defn solver-2 [input]
+  (let [lines (str/split input #"\n")
+        raw-numbers (drop-last 1 lines)
+        raw-operations (first (take-last 1 lines))
+        operations (map (comp resolve symbol last) (re-seq #"([\*|\+])" raw-operations))
+        numbers (->> (apply mapv vector raw-numbers)
+                     (map (partial filter (complement #{\space})))
+                     (partition-by empty?)
+                     (filter (complement #{'(())}))
+                     (map (partial map (partial apply str)))
+                     (map (partial map #(Long/parseLong %))))]
+    (->> (mapv apply operations numbers)
+         (reduce +))))
+
 (comment
-  (= 4583860641327 (solver-1 input)))
+  (= 4583860641327 (solver-1 input))
+  (= 11602774058280 (solver-2 input)))
 
